@@ -19,6 +19,7 @@ public class PlayerHealth : MonoBehaviour
         PlayerLook.Instance.AddShake(0.1f, 0.25f);
         UIManager.Instance.InstantiateHitUI();
         AudioManager.Instance.PlaySFX(hitSFX);
+        UIManager.Instance.SetHealthValue(health);
 
         if(health <= 0)
         {
@@ -29,5 +30,8 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         Time.timeScale = 0f;
+        UIManager.Instance.EnableDeathUI();
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 }

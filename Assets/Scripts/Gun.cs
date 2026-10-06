@@ -30,6 +30,7 @@ public class Gun : MonoBehaviour
         currentAmmo = magSize;
         initialRotation = transform.localRotation;
         initialPosition = transform.localPosition;
+        UIManager.Instance.ammoText.text = currentAmmo.ToString();
     }
 
     public void Shoot()
@@ -45,6 +46,7 @@ public class Gun : MonoBehaviour
 
         nextTimeToFire = Time.time + fireRate;
         currentAmmo--;
+        UIManager.Instance.ammoText.text = currentAmmo.ToString();
 
         AudioManager.Instance.PlaySFX(shootingSFX, 0.25f);
 
@@ -82,6 +84,7 @@ public class Gun : MonoBehaviour
         }
 
         currentAmmo = magSize;
+        UIManager.Instance.ammoText.text = currentAmmo.ToString();
         isReloading = false;
     }
 
@@ -119,6 +122,7 @@ public class Gun : MonoBehaviour
 
     public void Drop()
     {
+        UIManager.Instance.ammoText.text = "";
         Instantiate(droppedWeapon, transform.position, transform.rotation);
         Destroy(gameObject);
     }
