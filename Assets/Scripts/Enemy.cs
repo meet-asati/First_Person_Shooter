@@ -37,7 +37,7 @@ public class Enemy : MonoBehaviour
 
     private NavMeshAgent agent;
 
-    public enum State {Idle, Patrolling, Chasing, Attacking}
+    public enum State { Idle, Patrolling, Chasing, Attacking }
     public State state = State.Idle;
 
     public AudioClip shootingSFX;
@@ -84,10 +84,11 @@ public class Enemy : MonoBehaviour
         rend.material = originalMaterial;
     }
 
-    private void Update() {
+    private void Update()
+    {
         LookForPlayer();
 
-        switch(state)
+        switch (state)
         {
             case State.Idle:
                 Idle();
@@ -111,13 +112,13 @@ public class Enemy : MonoBehaviour
 
     private void LookForPlayer()
     {
-        Vector3 directionToPlayer =  playerTranform.position - transform.position;
+        Vector3 directionToPlayer = playerTranform.position - transform.position;
 
-        if(Physics.Raycast(transform.position, directionToPlayer, out RaycastHit hit, maxVisionDistance))
+        if (Physics.Raycast(transform.position, directionToPlayer, out RaycastHit hit, maxVisionDistance))
         {
             canSeePlayer = hit.transform == playerTranform;
 
-            if(canSeePlayer && state != State.Attacking)
+            if (canSeePlayer && state != State.Attacking)
             {
                 state = State.Chasing;
             }
@@ -130,7 +131,7 @@ public class Enemy : MonoBehaviour
 
         idleTimeCounter -= Time.deltaTime;
 
-        if(idleTimeCounter < 0)
+        if (idleTimeCounter < 0)
         {
             state = State.Patrolling;
             idleTimeCounter = idleTime;
@@ -139,11 +140,11 @@ public class Enemy : MonoBehaviour
 
     private void Patrolling()
     {
-        if(Vector3.Distance(currentTarget, transform.position) < positionThreshold)
+        if (Vector3.Distance(currentTarget, transform.position) < positionThreshold)
         {
             float chance = Random.Range(0, 100);
 
-            if(chance < 10)
+            if (chance < 10)
             {
                 state = State.Idle;
                 return;
@@ -154,7 +155,7 @@ public class Enemy : MonoBehaviour
         }
         else
         {
-            agent.SetDestination(currentTarget); 
+            agent.SetDestination(currentTarget);
         }
     }
 
@@ -165,9 +166,9 @@ public class Enemy : MonoBehaviour
 
         Shoot();
 
-        if(Vector3.Distance(transform.position, playerTranform.position) > attackDistance || !canSeePlayer)
+        if (Vector3.Distance(transform.position, playerTranform.position) > attackDistance || !canSeePlayer)
         {
-            if(health < minChasingHealth)
+            if (health < minChasingHealth)
             {
                 state = State.Patrolling;
             }
@@ -183,11 +184,11 @@ public class Enemy : MonoBehaviour
         idleTimeCounter = idleTime;
         agent.SetDestination(lastKnownPlayerPosition);
 
-        if(health < minChasingHealth)
+        if (health < minChasingHealth)
         {
             state = State.Patrolling;
         }
-        else if(Vector3.Distance(transform.position, playerTranform.position) <= attackDistance && canSeePlayer)
+        else if (Vector3.Distance(transform.position, playerTranform.position) <= attackDistance && canSeePlayer)
         {
             state = State.Attacking;
         }
@@ -195,7 +196,7 @@ public class Enemy : MonoBehaviour
         {
             state = State.Patrolling;
         }
-        else if(Vector3.Distance(transform.position, playerTranform.position) < positionThreshold && !canSeePlayer)
+        else if (Vector3.Distance(transform.position, playerTranform.position) < positionThreshold && !canSeePlayer)
         {
             state = State.Patrolling;
         }
@@ -203,7 +204,7 @@ public class Enemy : MonoBehaviour
 
     private void LookAtPlayer()
     {
-        if(canSeePlayer)
+        if (canSeePlayer)
         {
             transform.LookAt(new Vector3(playerTranform.position.x, playerTranform.position.y, playerTranform.position.z));
         }
@@ -211,7 +212,7 @@ public class Enemy : MonoBehaviour
 
     private void SetLastKnownPlayerPosition()
     {
-        if(canSeePlayer)
+        if (canSeePlayer)
         {
             lastKnownPlayerPosition = playerTranform.position;
         }
@@ -219,22 +220,26 @@ public class Enemy : MonoBehaviour
 
     private void Shoot()
     {
-        Vector3 directionToPlayer = playerTranform.position - transform.position;
-        directionToPlayer.Normalize();
+        if (Time.time > lastShotTime + fireRate)
+        {
+            Vector3 directionToPlayer = playerTranform.position - transform.position;
+            directionToPlayer.Normalize();
 
-        Quaternion bulletRotation = Quaternion.LookRotation(directionToPlayer);
+            Quaternion bulletRotation = Quaternion.LookRotation(directionToPlayer);
 
-        float maxInaccuracy = 10f;
-        float currentInaccuracy = bloom * maxInaccuracy;
-        float randomJaw = Random.Range(-currentInaccuracy, currentInaccuracy);
-        float randomPitch = Random.Range(-currentInaccuracy, currentInaccuracy);
+            float maxInaccuracy = 10f;
+            float currentInaccuracy = bloom * maxInaccuracy;
+            float randomJaw = Random.Range(-currentInaccuracy, currentInaccuracy);
+            float randomPitch = Random.Range(-currentInaccuracy, currentInaccuracy);
 
-        bulletRotation *= Quaternion.Euler(randomPitch, randomJaw + 90, 0f);
+            bulletRotation *= Quaternion.Euler(randomPitch, randomJaw + 90, 0f);
 
-        AudioManager.Instance.PlaySFX(shootingSFX, 0.25f);
+            AudioManager.Instance.PlaySFX(shootingSFX, 0.25f);
 
-        Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletRotation);
-        Instantiate(weaponFlash, bulletSpawnPoint.position, bulletRotation);
-        lastShotTime = Time.time;
+            Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletRotation);
+            Instantiate(weaponFlash, bulletSpawnPoint.position, bulletRotation);
+            lastShotTime = Time.time;
+        }
     }
+
 }
