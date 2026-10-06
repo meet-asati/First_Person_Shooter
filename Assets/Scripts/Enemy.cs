@@ -40,6 +40,8 @@ public class Enemy : MonoBehaviour
     public enum State {Idle, Patrolling, Chasing, Attacking}
     public State state = State.Idle;
 
+    public AudioClip shootingSFX;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -228,6 +230,8 @@ public class Enemy : MonoBehaviour
         float randomPitch = Random.Range(-currentInaccuracy, currentInaccuracy);
 
         bulletRotation *= Quaternion.Euler(randomPitch, randomJaw + 90, 0f);
+
+        AudioManager.Instance.PlaySFX(shootingSFX, 0.25f);
 
         Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletRotation);
         Instantiate(weaponFlash, bulletSpawnPoint.position, bulletRotation);

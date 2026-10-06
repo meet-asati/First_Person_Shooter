@@ -511,6 +511,7 @@ MonoBehaviour:
   droppedWeapon: {fileID: 5786097810451525583, guid: b90a3a640c808eb429d8d6c7813d6a67, type: 3}
   recoilDistance: 0.1
   recoilSpeed: 15
+  shootingSFX: {fileID: 0}
 --- !u!1 &4734814290040923017
 GameObject:
   m_ObjectHideFlags: 0
@@ -918,6 +919,7 @@ MonoBehaviour:
   minChasingHealth: 30
   patrolPoints: []
   state: 0
+  shootingSFX: {fileID: 8300000, guid: 8b5ce301c9be558489de9a0ff768829b, type: 3}
 --- !u!195 &9096736534839151835
 NavMeshAgent:
   m_ObjectHideFlags: 0

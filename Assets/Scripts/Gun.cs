@@ -23,6 +23,8 @@ public class Gun : MonoBehaviour
     private Vector3 initialPosition;
     private Vector3 reloadRotationOffset = new Vector3(66, 50, 50);
 
+    public AudioClip shootingSFX;
+
     void Start()
     {
         currentAmmo = magSize;
@@ -44,7 +46,11 @@ public class Gun : MonoBehaviour
         nextTimeToFire = Time.time + fireRate;
         currentAmmo--;
 
-        Instantiate(bullet, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
+        AudioManager.Instance.PlaySFX(shootingSFX, 0.25f);
+
+        Quaternion adjustedRotation = bulletSpawnPoint.rotation * Quaternion.Euler(-6f, -3f, 0f);
+
+        Instantiate(bullet, bulletSpawnPoint.position, adjustedRotation);
         Instantiate(weaponFlash, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
 
         StopCoroutine(nameof(Recoil));

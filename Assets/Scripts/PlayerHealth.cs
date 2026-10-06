@@ -3,6 +3,8 @@ using UnityEngine;
 public class PlayerHealth : MonoBehaviour
 {
     public int health = 100;
+
+    public AudioClip hitSFX;
     
     private void OnCollisionEnter(Collision other) {
         if(other.gameObject.tag == "Damage")
@@ -16,6 +18,7 @@ public class PlayerHealth : MonoBehaviour
         health -= decreaseAmt;
         PlayerLook.Instance.AddShake(0.1f, 0.25f);
         UIManager.Instance.InstantiateHitUI();
+        AudioManager.Instance.PlaySFX(hitSFX);
 
         if(health <= 0)
         {
