@@ -72,11 +72,7 @@ public class Enemy : MonoBehaviour
 
     void Die()
     {
-        if (!this.enabled) return;
-
-        rb.freezeRotation = false;
-        transform.rotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y, transform.rotation.z + 5f);
-        this.enabled = false;
+        Destroy(gameObject);
     }
 
     IEnumerator Blink()
