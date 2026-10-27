@@ -37,10 +37,188 @@ public class Enemy : MonoBehaviour
 
     private NavMeshAgent agent;
 
-    public enum State { Idle, Patrolling, Chasing, Attacking }
-    public State state = State.Idle;
+    public enum State
+    {
+        Idle,
+        Patrolling,
+        Chasing,
+        Attacking
+    }
+
+    public State state { get; private set; }
+
+    private EnemyState currentState;
 
     public AudioClip shootingSFX;
+
+    private abstract class EnemyState
+    {
+        protected Enemy enemy;
+
+        public void SetContext(Enemy enemy)
+        {
+            this.enemy = enemy;
+        }
+
+        public virtual void Enter()
+        {
+        }
+
+        public virtual void Exit()
+        {
+        }
+
+        public abstract void Update();
+    }
+
+    private sealed class IdleState : EnemyState
+    {
+        public override void Enter()
+        {
+            enemy.agent.ResetPath();
+        }
+
+        public override void Update()
+        {
+            enemy.idleTimeCounter -= Time.deltaTime;
+
+            if (enemy.idleTimeCounter < 0f)
+            {
+                enemy.idleTimeCounter = enemy.idleTime;
+                enemy.TransitionTo(
+                    new PatrollingState(),
+                    State.Patrolling);
+            }
+        }
+    }
+
+    private sealed class PatrollingState : EnemyState
+    {
+        public override void Update()
+        {
+            if (Vector3.Distance(
+                    enemy.currentTarget,
+                    enemy.transform.position) < enemy.positionThreshold)
+            {
+                float chance = Random.Range(0f, 100f);
+
+                if (chance < 10f)
+                {
+                    enemy.TransitionTo(
+                        new IdleState(),
+                        State.Idle);
+
+                    return;
+                }
+
+                enemy.currentPointIndex++;
+
+                enemy.currentTarget =
+                    enemy.patrolPoints[
+                        (int)(enemy.currentPointIndex %
+                              enemy.patrolPoints.Length)].position;
+            }
+            else
+            {
+                enemy.agent.SetDestination(enemy.currentTarget);
+            }
+        }
+    }
+
+    private sealed class ChasingState : EnemyState
+    {
+        public override void Enter()
+        {
+            enemy.idleTimeCounter = enemy.idleTime;
+        }
+
+        public override void Update()
+        {
+            enemy.agent.SetDestination(enemy.lastKnownPlayerPosition);
+
+            float distanceToPlayer = Vector3.Distance(
+                enemy.transform.position,
+                enemy.playerTranform.position);
+
+            if (enemy.health < enemy.minChasingHealth)
+            {
+                enemy.TransitionTo(
+                    new PatrollingState(),
+                    State.Patrolling);
+            }
+            else if (distanceToPlayer <= enemy.attackDistance &&
+                     enemy.canSeePlayer)
+            {
+                enemy.TransitionTo(
+                    new AttackingState(),
+                    State.Attacking);
+            }
+            else if (distanceToPlayer > enemy.maxVisionDistance)
+            {
+                enemy.TransitionTo(
+                    new PatrollingState(),
+                    State.Patrolling);
+            }
+            else if (distanceToPlayer < enemy.positionThreshold &&
+                     !enemy.canSeePlayer)
+            {
+                enemy.TransitionTo(
+                    new PatrollingState(),
+                    State.Patrolling);
+            }
+        }
+    }
+
+    private sealed class AttackingState : EnemyState
+    {
+        public override void Enter()
+        {
+            enemy.idleTimeCounter = enemy.idleTime;
+            enemy.agent.ResetPath();
+        }
+
+        public override void Update()
+        {
+            enemy.Shoot();
+
+            float distanceToPlayer = Vector3.Distance(
+                enemy.transform.position,
+                enemy.playerTranform.position);
+
+            if (distanceToPlayer > enemy.attackDistance ||
+                !enemy.canSeePlayer)
+            {
+                if (enemy.health < enemy.minChasingHealth)
+                {
+                    enemy.TransitionTo(
+                        new PatrollingState(),
+                        State.Patrolling);
+                }
+                else
+                {
+                    enemy.TransitionTo(
+                        new ChasingState(),
+                        State.Chasing);
+                }
+            }
+        }
+    }
+
+    private void TransitionTo(EnemyState nextState, State stateValue)
+    {
+        if (currentState != null && currentState.GetType() == nextState.GetType())
+        {
+            return;
+        }
+
+        currentState?.Exit();
+
+        currentState = nextState;
+        currentState.SetContext(this);
+        state = stateValue;
+
+        currentState.Enter();
+    }
 
     void Start()
     {
@@ -53,6 +231,8 @@ public class Enemy : MonoBehaviour
 
         GameObject patrolPointParent = GameObject.FindWithTag("PatrolPoint");
         patrolPoints = patrolPointParent.GetComponentsInChildren<Transform>().Where(t => t != patrolPointParent.transform).ToArray();
+
+        TransitionTo(new IdleState(), State.Idle);
     }
 
     void OnCollisionEnter(Collision collision)
@@ -88,21 +268,7 @@ public class Enemy : MonoBehaviour
     {
         LookForPlayer();
 
-        switch (state)
-        {
-            case State.Idle:
-                Idle();
-                break;
-            case State.Patrolling:
-                Patrolling();
-                break;
-            case State.Attacking:
-                Attacking();
-                break;
-            case State.Chasing:
-                Chasing();
-                break;
-        }
+        currentState?.Update();
 
         rb.linearVelocity = Vector3.zero;
 
@@ -120,85 +286,8 @@ public class Enemy : MonoBehaviour
 
             if (canSeePlayer && state != State.Attacking)
             {
-                state = State.Chasing;
+                TransitionTo(new ChasingState(), State.Chasing);
             }
-        }
-    }
-
-    private void Idle()
-    {
-        agent.ResetPath();
-
-        idleTimeCounter -= Time.deltaTime;
-
-        if (idleTimeCounter < 0)
-        {
-            state = State.Patrolling;
-            idleTimeCounter = idleTime;
-        }
-    }
-
-    private void Patrolling()
-    {
-        if (Vector3.Distance(currentTarget, transform.position) < positionThreshold)
-        {
-            float chance = Random.Range(0, 100);
-
-            if (chance < 10)
-            {
-                state = State.Idle;
-                return;
-            }
-
-            currentPointIndex++;
-            currentTarget = patrolPoints[(int)(currentPointIndex % patrolPoints.Length)].position;
-        }
-        else
-        {
-            agent.SetDestination(currentTarget);
-        }
-    }
-
-    private void Attacking()
-    {
-        idleTimeCounter = idleTime;
-        agent.ResetPath();
-
-        Shoot();
-
-        if (Vector3.Distance(transform.position, playerTranform.position) > attackDistance || !canSeePlayer)
-        {
-            if (health < minChasingHealth)
-            {
-                state = State.Patrolling;
-            }
-            else
-            {
-                state = State.Chasing;
-            }
-        }
-    }
-
-    private void Chasing()
-    {
-        idleTimeCounter = idleTime;
-        agent.SetDestination(lastKnownPlayerPosition);
-
-        if (health < minChasingHealth)
-        {
-            state = State.Patrolling;
-        }
-        else if (Vector3.Distance(transform.position, playerTranform.position) <= attackDistance && canSeePlayer)
-        {
-            state = State.Attacking;
-        }
-        else if (Vector3.Distance(transform.position, playerTranform.position) > maxVisionDistance)
-        {
-            state = State.Patrolling;
-        }
-        else if (Vector3.Distance(transform.position, playerTranform.position) < positionThreshold && !canSeePlayer)
-        {
-            state = State.Patrolling;
         }
     }
 
