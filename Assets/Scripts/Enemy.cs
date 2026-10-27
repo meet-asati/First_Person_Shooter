@@ -289,6 +289,10 @@ public class Enemy : MonoBehaviour
                 TransitionTo(new ChasingState(), State.Chasing);
             }
         }
+        else
+        {
+            canSeePlayer = false;
+        }
     }
 
     private void LookAtPlayer()

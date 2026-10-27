@@ -4,8 +4,7 @@ using UnityEngine.InputSystem;
 public class PickUp : MonoBehaviour
 {
     public Material highlightMaterial;
-    private Material[] originalMaterials;
-    private MeshRenderer[] meshRenderers;
+    private IPickupVisual pickupVisual;
 
     public GameObject weaponPrefab;
     public float lookRange = 3f;
@@ -16,12 +15,9 @@ public class PickUp : MonoBehaviour
 
     void Start()
     {
-        meshRenderers = GetComponentsInChildren<MeshRenderer>();
-        originalMaterials = new Material[meshRenderers.Length];    
-        for(int i = 0; i < meshRenderers.Length; i++)
-        {
-            originalMaterials[i] = meshRenderers[i].material;
-        }
+        MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
+        IPickupVisual rendererVisual = new RendererVisual(meshRenderers);
+        pickupVisual = new HighlightDecorator(rendererVisual, highlightMaterial);
 
         player = FindObjectOfType<PlayerShooting>();
         playerCam = player.GetComponentInChildren<Camera>();
@@ -51,17 +47,11 @@ public class PickUp : MonoBehaviour
 
         if(lookedAt)
         {
-            foreach(MeshRenderer mr in meshRenderers)
-            {
-                mr.material = highlightMaterial;
-            }
+            pickupVisual.Apply(highlightMaterial);
         }
         else
         {
-            for(int i = 0; i < meshRenderers.Length; i++)
-            {
-                meshRenderers[i].material = originalMaterials[i];
-            }
+            pickupVisual.Restore();
         }
     }
 
