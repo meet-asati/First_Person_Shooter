@@ -75,7 +75,7 @@ public class PickUp : MonoBehaviour
         newWeapon.transform.localPosition = Vector3.zero;
         newWeapon.transform.localRotation = Quaternion.identity;
 
-        player.gun = newWeapon.GetComponent<Gun>();
+        player.SetGun(newWeapon.GetComponent<Gun>());
 
         Destroy(gameObject);
     }

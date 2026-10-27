@@ -1,12 +1,40 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerShooting : MonoBehaviour
 {
     public Gun gun;
-    private bool isHoldingShoot = false;
-
     public Transform gunHolder;
+
+    private bool isHoldingShoot;
+    private ICommand shootCommand;
+    private ICommand reloadCommand;
+    private ICommand dropCommand;
+
+    private void Awake()
+    {
+        ConfigureCommands();
+    }
+
+    private void ConfigureCommands()
+    {
+        if (gun == null)
+        {
+            shootCommand = null;
+            reloadCommand = null;
+            dropCommand = null;
+            return;
+        }
+
+        shootCommand = new ShootCommand(gun);
+        reloadCommand = new ReloadCommand(gun);
+        dropCommand = new DropCommand(gun);
+    }
+
+    public void SetGun(Gun newGun)
+    {
+        gun = newGun;
+        ConfigureCommands();
+    }
 
     void OnShoot()
     {
@@ -17,29 +45,27 @@ public class PlayerShooting : MonoBehaviour
     {
         isHoldingShoot = false;
     }
-
     void OnReload()
     {
-        if(gun != null)
-        {
-            gun.TryReload();
-        }
+        reloadCommand?.Execute();
     }
 
     void Update()
     {
-        if(isHoldingShoot && gun != null)
+        if (isHoldingShoot)
         {
-            gun.Shoot();
+            shootCommand?.Execute();
         }
     }
 
     public void OnDrop()
     {
-        if(gun != null)
+        if (dropCommand == null)
         {
-            gun.Drop();
-            gun = null;
+            return;
         }
+
+        dropCommand.Execute();
+        SetGun(null);
     }
 }
