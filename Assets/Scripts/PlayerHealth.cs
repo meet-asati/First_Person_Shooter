@@ -1,25 +1,48 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerHealth : MonoBehaviour
+
+public class PlayerHealth : MonoBehaviour, ISubject
 {
     public int health = 100;
 
     public AudioClip hitSFX;
-    
-    private void OnCollisionEnter(Collision other) {
-        if(other.gameObject.tag == "Damage")
+
+    private readonly List<IObserver> observers = new List<IObserver>();
+
+    public void Attach(IObserver observer)
+    {
+        if (observer != null && !observers.Contains(observer))
+        {
+            observers.Add(observer);
+        }
+    }
+
+    public void Detach(IObserver observer)
+    {
+        observers.Remove(observer);
+    }
+
+    public void Notify()
+    {
+        foreach (IObserver observer in observers.ToArray())
+        {
+            observer.OnSubjectChanged(this);
+        }
+    }
+
+    private void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.CompareTag("Damage"))
         {
             DecreaseHealth(10);
         }
     }
 
-    private void DecreaseHealth(int decreaseAmt)
+    private void DecreaseHealth(int decreaseAmount)
     {
-        health -= decreaseAmt;
-        PlayerLook.Instance.AddShake(0.1f, 0.25f);
-        UIManager.Instance.InstantiateHitUI();
-        AudioManager.Instance.PlaySFX(hitSFX);
-        UIManager.Instance.SetHealthValue(health);
+        health -= decreaseAmount;
+        Notify();
 
         if(health <= 0)
         {
@@ -33,5 +56,10 @@ public class PlayerHealth : MonoBehaviour
         UIManager.Instance.EnableDeathUI();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+    }
+
+    private void OnDestroy()
+    {
+        observers.Clear();
     }
 }
